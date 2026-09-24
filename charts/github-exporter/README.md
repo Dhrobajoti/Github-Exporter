@@ -97,13 +97,8 @@ kubectl create secret generic github-exporter-scrape \
 
 ## Usage
 
+Build the container image from the repository's `Dockerfile`, push it to a registry your cluster can pull from, then install the chart from a checkout, pointing `image.repository` and `image.tag` at that image:
+
 ```sh
 helm install github-exporter ./charts/github-exporter -f my-values.yaml
-```
-
-Once the chart is published from your repository's GitHub Pages:
-
-```sh
-helm repo add <name> https://<owner>.github.io/github-exporter/
-helm install github-exporter <name>/github-exporter -f my-values.yaml
 ```
