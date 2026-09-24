@@ -1,0 +1,12 @@
+# Binaries
+/github-exporter
+/github-exporter.exe
+
+# Secrets and local deployment config
+*.pem
+.env
+/config/
+
+# Helm
+charts/**/charts/
+*.tgz

@@ -1,0 +1,163 @@
+suite: Test deployment rendering
+templates:
+  - deployment.yaml
+tests:
+  - it: should set image tag
+    set:
+      image.tag: "mytag"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/your-org/github-exporter:mytag"
+  - it: should default the image tag to the chart appVersion
+    chart:
+      appVersion: "9.9.9"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/your-org/github-exporter:9.9.9"
+  - it: should set environment variable
+    set:
+      env.GITHUB_ORG: "acme"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="GITHUB_ORG")].value
+          value: "acme"
+  - it: should derive LISTEN_PORT from service.port
+    set:
+      service.port: 9100
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="LISTEN_PORT")].value
+          value: "9100"
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 9100
+  - it: should let env override LISTEN_PORT without duplicating it
+    set:
+      env.LISTEN_PORT: "7000"
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].env
+          count: 1
+      - equal:
+          path: spec.template.spec.containers[0].env[0].value
+          value: "7000"
+  - it: should load secrets via envFrom
+    set:
+      envFrom:
+        - secretRef:
+            name: github-exporter-token
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].envFrom[0].secretRef.name
+          value: github-exporter-token
+  - it: should not render envFrom when unset
+    asserts:
+      - notExists:
+          path: spec.template.spec.containers[0].envFrom
+  - it: should configure probes
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].livenessProbe.httpGet.path
+          value: /healthz
+      - equal:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet.path
+          value: /readyz
+  - it: should run as the image's non-root user
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsUser
+          value: 65532
+      - equal:
+          path: spec.template.spec.containers[0].securityContext.runAsNonRoot
+          value: true
+  - it: should set a restrictive pod security context
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.runAsNonRoot
+          value: true
+      - equal:
+          path: spec.template.spec.securityContext.seccompProfile.type
+          value: RuntimeDefault
+  - it: should set resource requests and limits by default
+    asserts:
+      - exists:
+          path: spec.template.spec.containers[0].resources.requests.memory
+      - exists:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+  - it: should mount extra volumes
+    set:
+      extraVolumeMounts:
+        - name: github-app-key
+          mountPath: /etc/github-app
+          readOnly: true
+      extraVolumes:
+        - name: github-app-key
+          secret:
+            secretName: github-app-private-key
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /etc/github-app
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: github-app-private-key
+  - it: should not mount web config by default
+    asserts:
+      - notExists:
+          path: spec.template.spec.volumes
+      - notExists:
+          path: spec.template.spec.containers[0].volumeMounts
+  - it: should mount the web config secret and use TCP probes when enabled
+    set:
+      webConfig.enabled: true
+      webConfig.existingSecret: exporter-web
+    asserts:
+      - equal:
+          path: spec.template.spec.volumes[0].secret.secretName
+          value: exporter-web
+      - equal:
+          path: spec.template.spec.containers[0].volumeMounts[0].mountPath
+          value: /etc/github-exporter/web
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="WEB_CONFIG_FILE")].value
+          value: /etc/github-exporter/web/web-config.yml
+      - exists:
+          path: spec.template.spec.containers[0].readinessProbe.tcpSocket
+      - notExists:
+          path: spec.template.spec.containers[0].readinessProbe.httpGet
+  - it: should keep extra volumes next to the web config volume
+    set:
+      webConfig.enabled: true
+      webConfig.existingSecret: exporter-web
+      extraVolumes:
+        - name: github-app-key
+          secret:
+            secretName: github-app-private-key
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.volumes
+          count: 2
+  - it: should require a secret name when web config is enabled
+    set:
+      webConfig.enabled: true
+    asserts:
+      - failedTemplate:
+          errorMessage: webConfig.existingSecret is required when webConfig.enabled=true
+  - it: should set pod annotations
+    set:
+      podAnnotations:
+        annotation/foo-bar: "foo-bar"
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations.annotation/foo-bar
+          value: foo-bar
+  - it: should set deployment annotation
+    set:
+      annotations:
+        annotation/foo-bar: "foo-bar"
+    asserts:
+      - equal:
+          path: metadata.annotations.annotation/foo-bar
+          value: foo-bar

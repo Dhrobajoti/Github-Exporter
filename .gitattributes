@@ -1,0 +1,7 @@
+# Normalise line endings so files developed on Windows work unchanged in Linux
+# containers, shell scripts and systemd units.
+* text=auto eol=lf
+
+*.png binary
+*.pem binary
+*.tgz binary

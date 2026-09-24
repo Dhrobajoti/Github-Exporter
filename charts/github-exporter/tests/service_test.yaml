@@ -1,0 +1,21 @@
+suite: Test service rendering
+templates:
+  - service.yaml
+tests:
+  - it: should set service type
+    set:
+      service.type: "NodePort"
+    asserts:
+      - equal:
+          path: spec.type
+          value: "NodePort"
+  - it: should set service port and target the named container port
+    set:
+      service.port: 1234
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 1234
+      - equal:
+          path: spec.ports[0].targetPort
+          value: http

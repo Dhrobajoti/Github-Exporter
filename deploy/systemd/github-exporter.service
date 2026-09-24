@@ -1,0 +1,41 @@
+[Unit]
+Description=GitHub Security Alerts Exporter
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=github-exporter
+Group=github-exporter
+
+# All settings come from this file; see .env.example for the available keys.
+EnvironmentFile=/etc/github-exporter/github-exporter.env
+ExecStart=/usr/local/bin/github-exporter
+
+Restart=on-failure
+RestartSec=10s
+
+# Sandboxing. The exporter only needs outbound HTTPS to GitHub, an inbound
+# port, and read access to its files in /etc/github-exporter.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=true
+RestrictRealtime=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+SystemCallArchitectures=native
+CapabilityBoundingSet=
+AmbientCapabilities=
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

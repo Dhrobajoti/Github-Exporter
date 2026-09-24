@@ -1,0 +1,50 @@
+suite: Test servicemonitor rendering
+templates:
+  - servicemonitor.yaml
+tests:
+  - it: should not render by default
+    asserts:
+      - hasDocuments:
+          count: 0
+  - it: should set scrape interval
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.interval: '10s'
+    asserts:
+      - equal:
+          path: spec.endpoints[0].interval
+          value: '10s'
+  - it: should set scrape timeout
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.scrapeTimeout: '10s'
+    asserts:
+      - equal:
+          path: spec.endpoints[0].scrapeTimeout
+          value: '10s'
+  - it: should use plain http when web config is disabled
+    set:
+      serviceMonitor.enabled: true
+    asserts:
+      - notExists:
+          path: spec.endpoints[0].scheme
+      - notExists:
+          path: spec.endpoints[0].basicAuth
+  - it: should scrape over https with basic auth when web config is enabled
+    set:
+      serviceMonitor.enabled: true
+      webConfig.enabled: true
+      serviceMonitor.basicAuth.secretName: exporter-scrape
+    asserts:
+      - equal:
+          path: spec.endpoints[0].scheme
+          value: https
+      - equal:
+          path: spec.endpoints[0].tlsConfig.insecureSkipVerify
+          value: true
+      - equal:
+          path: spec.endpoints[0].basicAuth.password.name
+          value: exporter-scrape
+      - equal:
+          path: spec.endpoints[0].basicAuth.username.key
+          value: username

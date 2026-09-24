@@ -1,0 +1,11 @@
+.git
+.github
+charts
+deploy
+docs
+config
+*.md
+*.pem
+.env
+.env.*
+docker-compose.yml

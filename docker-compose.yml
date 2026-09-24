@@ -1,0 +1,26 @@
+# Run with:  docker compose up -d --build
+#
+# Settings are read from ".env" in this directory (copy .env.example).
+# Files the exporter needs (GitHub App key, TLS certificate, web-config.yml)
+# go in ./config and are mounted read-only at /etc/github-exporter.
+services:
+  github-exporter:
+    build: .
+    image: github-exporter:latest
+    container_name: github-exporter
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${LISTEN_PORT:-8080}:${LISTEN_PORT:-8080}"
+    volumes:
+      - ./config:/etc/github-exporter:ro
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

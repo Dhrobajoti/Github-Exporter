@@ -1,0 +1,15 @@
+# Web configuration for the exporter's HTTP endpoint (WEB_CONFIG_FILE).
+# Same format as node_exporter and other Prometheus exporters.
+#
+# Copy to web-config.yml, then:
+#   1. create the certificate and key referenced below
+#   2. replace the hash with the bcrypt hash of your scrape password
+#      (printf '%s' 'your-password' | github-exporter hash-password)
+
+tls_server_config:
+  cert_file: /etc/github-exporter/tls.crt
+  key_file: /etc/github-exporter/tls.key
+
+# username: bcrypt hash of the password. Add one line per user.
+basic_auth_users:
+  prometheus: REPLACE_WITH_BCRYPT_HASH

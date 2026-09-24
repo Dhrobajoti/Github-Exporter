@@ -1,0 +1,37 @@
+name: Helm Chart Lint and Test
+
+on:
+  pull_request:
+    paths:
+      - 'charts/github-exporter/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/github-exporter/**'
+
+permissions:
+  contents: read
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Helm
+        uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5.0.1
+        with:
+          version: 'v3.19.2'
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest --version v1.1.2
+
+      - name: Run helm-unittest
+        run: helm unittest charts/github-exporter
+
+      - name: Lint Helm Chart
+        run: helm lint charts/github-exporter

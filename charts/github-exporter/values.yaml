@@ -1,0 +1,84 @@
+fullnameOverride: ""
+nameOverride: ""
+
+# Every replica queries GitHub independently, so extra replicas only use more
+# API rate limit. Keep at 1 unless you have a reason.
+replicaCount: 1
+annotations: {}
+podAnnotations: {}
+
+image:
+  repository: ghcr.io/your-org/github-exporter
+  # Defaults to the chart appVersion. Pin a release tag or a digest in production.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  # Also used as the container port; exported to the app as LISTEN_PORT.
+  port: 8080
+
+# Plain environment variables. See the main README for all supported settings.
+env: {}
+  # GITHUB_ORG: "my-org"
+  # GITHUB_AUTH_MODE: "pat"
+  # ENABLED_SCANNERS: "dependabot,code_scanning,secret_scanning"
+  # METRICS_CACHE_TTL: "2m"
+
+# Load secrets (e.g. GITHUB_TOKEN) from existing Secrets instead of putting them in values.
+envFrom: []
+  # - secretRef:
+  #     name: github-exporter-token
+
+# HTTPS and basic authentication for the endpoint (WEB_CONFIG_FILE).
+# Requires an existing Secret with the keys web-config.yml, tls.crt and tls.key;
+# inside web-config.yml refer to the certificate as /etc/github-exporter/web/tls.crt.
+# When enabled the probes check the TCP port, because /healthz and /readyz
+# also require credentials.
+webConfig:
+  enabled: false
+  existingSecret: ""
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
+
+# Pod-level security context. The container itself additionally drops all
+# capabilities, uses a read-only root filesystem and forbids privilege escalation.
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 65532
+  runAsGroup: 65532
+  fsGroup: 65532
+  seccompProfile:
+    type: RuntimeDefault
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# For mounting extra secrets/configs (e.g. GitHub App private key)
+extraVolumeMounts: []
+  # - name: github-app-key
+  #   mountPath: /etc/github-app
+  #   readOnly: true
+extraVolumes: []
+  # - name: github-app-key
+  #   secret:
+  #     secretName: github-app-private-key
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  # Used when webConfig.enabled: a Secret with the keys "username" and "password"
+  # (the plain-text password whose bcrypt hash is in web-config.yml).
+  # The endpoint is scraped over HTTPS with certificate verification disabled.
+  basicAuth:
+    secretName: ""
