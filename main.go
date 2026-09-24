@@ -130,7 +130,11 @@ func run() {
 	c.Start()
 	log.Infof("Refreshing %v for org %s on schedule %q", cfg.Scanners, cfg.Org, cfg.Schedule)
 
-	srv := &http.Server{Handler: handler, ReadHeaderTimeout: 10 * time.Second}
+	srv := &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 10 * time.Second,
+		ErrorLog:          server.NewErrorLog(func(message string) { log.Warn(message) }),
+	}
 	go func() {
 		<-ctx.Done()
 		log.Info("Shutting down")
